@@ -55,7 +55,8 @@ if __name__ == '__main__':
     args = " ".join(x for x in sys.argv[1:])
 
     rate = 10
-    sport = 80
+    target_port = 80
+    source_port = os.environ.get('SONUS_SOURCE_PORT', '')
     output_fields = 'timestamp,saddr,ja4tscan'
     output_file = 'console'
     dedup_method = 'none'
@@ -68,7 +69,8 @@ if __name__ == '__main__':
 
     parser.add_argument('dest', help='destination network (ex, 203.123.123.0/24) / destination IP (ex, 10.10.10.10) / path to a file containing a list of IPs')
     parser.add_argument('-r', '--rate', help='zmap rate (defaults to 10)')
-    parser.add_argument('-p', '--port', help='tcp source port (defaults to 80)')
+    parser.add_argument('-p', '--port', help='target tcp port (defaults to 80)')
+    parser.add_argument('-s', '--source-port', help='tcp source port (defaults to SONUS_SOURCE_PORT or zmap default)')
     parser.add_argument('--output-fields', help='zmap output fields (defaults to timestamp,saddr,ja4tscan)')
     parser.add_argument('-o', '--output-file', choices=['console', 'csv'], help='default is set to console and output.csv is also generated')
     parser.add_argument('--retransmit', choices=['yes', 'no'], help='translates to zmap dedup-method, default is yes (dedup-method none)')
@@ -94,7 +96,9 @@ if __name__ == '__main__':
                 dest = f"-I {dest}"
 
     if args.port:
-        sport = args.port
+        target_port = args.port
+    if args.source_port:
+        source_port = args.source_port
     if args.rate:
         rate = args.rate
     if args.output_fields:
@@ -106,12 +110,14 @@ if __name__ == '__main__':
 
     if dedup_method == 'none': 
         setup_iptables()
-        cmd = f"zmap -p {sport} -r {rate} {dest} -o {filename} --output-fields={output_fields} --probe-module=ja4tscan --dedup-method {dedup_method} --cooldown-time=120"
+        source_arg = f" -s {source_port}" if source_port else ""
+        cmd = f"zmap -p {target_port}{source_arg} -r {rate} {dest} -o {filename} --output-fields={output_fields} --probe-module=ja4tscan --dedup-method {dedup_method} --cooldown-time=120"
         #         --output-filter='classification=rst'"
         #print (cmd)
     else:
         cleanup_iptables()
-        cmd = f"zmap -p {sport} -r {rate} {dest} -o {filename} --output-fields={output_fields} --probe-module=ja4tscan --dedup-method {dedup_method}"
+        source_arg = f" -s {source_port}" if source_port else ""
+        cmd = f"zmap -p {target_port}{source_arg} -r {rate} {dest} -o {filename} --output-fields={output_fields} --probe-module=ja4tscan --dedup-method {dedup_method}"
         #print (cmd)
     try:
         ret = os.system(cmd)
