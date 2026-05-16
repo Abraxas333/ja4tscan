@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build artifacts
+zmap/build/
+zmap/cmake-build-*/
+
+# Test inputs / outputs
+input
+output
+*.log
+*.pcap
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
